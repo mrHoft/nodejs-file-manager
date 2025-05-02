@@ -4,8 +4,13 @@ import { fileURLToPath } from 'node:url';
 import { message } from './src/message.js';
 import { ls } from './src/ls.js';
 import { cat } from './src/cat.js';
-import { touch } from './src/touch.js';
+import { createFile } from './src/create.js';
 import { createFolder } from './src/mkdir.js';
+import { renameFile } from './src/rename.js';
+import { copyFile } from './src/copy.js';
+import { moveFile } from './src/move.js';
+import { deleteFile } from './src/delete.js';
+import { systemInfo } from './src/os.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -37,18 +42,19 @@ function app() {
       const input = chunk.toString().trim();
       const operation = input.split(' ')[0].toLowerCase();
       const args = (() => {
-        const arg = input.split(' ')[1];
-        if (arg) return arg.split(' ');
+        const arr = input.split(' ').slice(1);
+        if (arr && Array.isArray(arr) && arr.length) return arr;
         return undefined;
       })();
 
+      const dir = process.cwd();
       switch (operation) {
         case '.exit': {
           terminate();
           break;
         }
         case 'up': {
-          if (process.cwd() === __dirname) {
+          if (dir === __dirname) {
             message.invalid('can not change directory upper than current');
           } else {
             process.chdir(resolve('..'));
@@ -57,7 +63,6 @@ function app() {
           break;
         }
         case 'ls': {
-          const dir = process.cwd();
           message.dir(dir);
           ls(join(dir, args ? args[0] : ''));
           break;
@@ -73,7 +78,6 @@ function app() {
         }
         case 'cat': {
           if (args) {
-            const dir = process.cwd();
             message.dir(dir);
             cat(join(dir, args[0]));
           } else {
@@ -83,9 +87,8 @@ function app() {
         }
         case 'add': {
           if (args) {
-            const dir = process.cwd();
             message.dir(dir);
-            touch(join(dir, args[0]));
+            createFile(join(dir, args[0]));
           } else {
             message.invalid('no file name was provided');
           }
@@ -93,10 +96,56 @@ function app() {
         }
         case 'mkdir': {
           if (args) {
-            message.dir(process.cwd());
+            message.dir(dir);
             createFolder(args[0]);
           } else {
             message.invalid('no directory name was provided');
+          }
+          break;
+        }
+        case 'rn': {
+          if (args && args[0] && args[1]) {
+            message.dir(dir);
+            renameFile(join(dir, args[0]), join(dir, args[1]));
+          } else {
+            console.log(args);
+            message.invalid('no file name was provided');
+          }
+          break;
+        }
+        case 'cp': {
+          if (args && args[0] && args[1]) {
+            message.dir(dir);
+            copyFile(join(dir, args[0]), join(dir, args[1]));
+          } else {
+            message.invalid('no file name was provided');
+          }
+          break;
+        }
+        case 'mv': {
+          if (args && args[0] && args[1]) {
+            message.dir(dir);
+            moveFile(join(dir, args[0]), join(dir, args[1]));
+          } else {
+            message.invalid('no file name was provided');
+          }
+          break;
+        }
+        case 'rm': {
+          if (args) {
+            message.dir(dir);
+            deleteFile(join(dir, args[0]));
+          } else {
+            message.invalid('no file name was provided');
+          }
+          break;
+        }
+        case 'os': {
+          if (args) {
+            message.dir(dir);
+            systemInfo(args[0]);
+          } else {
+            message.invalid('no argument was provided');
           }
           break;
         }
