@@ -1,0 +1,27 @@
+{
+  "name": "file-manager",
+  "version": "0.0.0",
+  "description": "file-manager",
+  "main": "main.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node main.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrHoft/nodejs-file-manager.git"
+  },
+  "keywords": [
+    "file-manager"
+  ],
+  "author": "mrHoft",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mrHoft/nodejs-file-manager/issues"
+  },
+  "homepage": "https://github.com/mrHoft/nodejs-file-manager#readme",
+  "engines": {
+    "node": ">=22"
+  }
+}
