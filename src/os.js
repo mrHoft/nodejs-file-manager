@@ -12,9 +12,12 @@ export const systemInfo = command => {
       const cpuInfo = cpus();
       console.log(`Total CPUs: ${cpuInfo.length}`);
       console.log('CPU details:');
-      cpuInfo.forEach((cpu, i) => {
-        console.log(`  CPU ${i + 1}: ${cpu.model}`);
-      });
+      console.table(
+        cpuInfo.map(cpu => ({
+          Model: cpu.model,
+          'Clock rate (GHz)': cpu.speed / 1000,
+        }))
+      );
       break;
     }
 

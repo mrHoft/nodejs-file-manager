@@ -1,13 +1,13 @@
 import { readdir, stat } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { message } from './message.js';
 
-export const ls = async () => {
+export const ls = async (dirName = '.') => {
   try {
-    const items = await readdir('.');
+    const items = await readdir(resolve(dirName));
     const tableData = await Promise.all(
       items.map(async item => {
-        const stats = await stat(resolve(item));
+        const stats = await stat(resolve(join(dirName, item)));
         return {
           name: item,
           type: stats.isDirectory() ? 'directory' : 'file',

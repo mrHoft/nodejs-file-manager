@@ -1,19 +1,8 @@
 import process from 'node:process';
+import readline from 'readline';
 import { homedir } from 'node:os';
-import { parse, resolve } from 'node:path';
 import { message } from './src/message.js';
-import { ls } from './src/ls.js';
-import { cat } from './src/cat.js';
-import { createFile } from './src/create.js';
-import { createFolder } from './src/mkdir.js';
-import { renameFile } from './src/rename.js';
-import { copyFile, moveFile } from './src/copy.js';
-import { deleteFile } from './src/delete.js';
-import { systemInfo } from './src/os.js';
-import { calculateHash } from './src/hash.js';
-import { compressFile, decompressFile } from './src/zip.js';
-
-const root = parse(resolve('.')).root;
+import { handler } from './src/handler.js';
 
 const username = (() => {
   const args = process.argv.slice(2);
@@ -31,6 +20,40 @@ const terminate = () => {
   process.exit(0);
 };
 
+const std = readline
+  .createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+  .on('close', terminate);
+
+function prompt(path = '') {
+  return new Promise((resolve, reject) => {
+    std.question(`${path}> `, async input => {
+      try {
+        resolve(input);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+}
+
+function perform() {
+  message.dir(process.cwd());
+
+  prompt(process.cwd())
+    .then(input => {
+      const text = input.trim();
+      if (text === '.exit' || text === 'exit') {
+        terminate();
+      }
+      return handler(text);
+    })
+    .catch(err => message.error(err.message))
+    .finally(perform);
+}
+
 function app() {
   try {
     process.chdir(homedir());
@@ -41,176 +64,8 @@ function app() {
   message.welcome(username);
   message.help();
   message.stdin();
-  message.dir(process.cwd());
 
-  process.stdin
-    .setEncoding('utf8')
-    .on('data', chunk => {
-      const input = chunk.toString().trim();
-      const operation = input.split(' ')[0].toLowerCase();
-      const args = (() => {
-        const arr = input.split(' ').slice(1);
-        if (arr && Array.isArray(arr) && arr.length) return arr;
-        return undefined;
-      })();
-
-      const dir = process.cwd();
-      switch (operation) {
-        case '.exit': {
-          terminate();
-          break;
-        }
-        case 'exit': {
-          terminate();
-          break;
-        }
-        case 'up': {
-          if (dir === root) {
-            message.invalid('can not change directory upper than root');
-          } else {
-            process.chdir(resolve('..'));
-            message.dir(process.cwd());
-          }
-          break;
-        }
-        case 'ls': {
-          message.dir(dir);
-          ls(args ? args[0] : '.');
-          break;
-        }
-        case 'cd': {
-          if (args) {
-            try {
-              process.chdir(args[0]);
-              message.dir(process.cwd());
-            } catch (err) {
-              if (err.code === 'ENOENT') {
-                message.error('No such directory');
-              } else {
-                message.error(err.message);
-              }
-            }
-          } else {
-            message.invalid('no directory name was provided');
-          }
-          break;
-        }
-        case 'cat': {
-          if (args) {
-            message.dir(dir);
-            cat(args[0]);
-          } else {
-            message.invalid('no file name was provided');
-          }
-          break;
-        }
-        case 'add': {
-          if (args) {
-            message.dir(dir);
-            createFile(args[0]);
-          } else {
-            message.invalid('no file name was provided');
-          }
-          break;
-        }
-        case 'mkdir': {
-          if (args) {
-            message.dir(dir);
-            createFolder(args[0]);
-          } else {
-            message.invalid('no directory name was provided');
-          }
-          break;
-        }
-        case 'rn': {
-          if (args && args[0] && args[1]) {
-            message.dir(dir);
-            renameFile(args[0], args[1]);
-          } else {
-            console.log(args);
-            message.invalid('no file name was provided');
-          }
-          break;
-        }
-        case 'cp': {
-          if (args && args[0] && args[1]) {
-            message.dir(dir);
-            copyFile(args[0], args[1]);
-          } else {
-            if (!args || !args[0]) {
-              message.invalid('no file name was provided');
-            } else {
-              message.invalid('no directory name was provided');
-            }
-          }
-          break;
-        }
-        case 'mv': {
-          if (args && args[0] && args[1]) {
-            message.dir(dir);
-            moveFile(args[0], args[1]);
-          } else {
-            if (!args || !args[0]) {
-              message.invalid('no file name was provided');
-            } else {
-              message.invalid('no directory name was provided');
-            }
-          }
-          break;
-        }
-        case 'rm': {
-          if (args) {
-            message.dir(dir);
-            deleteFile(args[0]);
-          } else {
-            message.invalid('no file name was provided');
-          }
-          break;
-        }
-        case 'os': {
-          if (args) {
-            message.dir(dir);
-            systemInfo(args[0]);
-          } else {
-            message.invalid('no argument was provided');
-          }
-          break;
-        }
-        case 'hash': {
-          if (args) {
-            message.dir(dir);
-            calculateHash(args[0]).catch(err => message.error(err.message));
-          } else {
-            message.invalid('no file name was provided');
-          }
-          break;
-        }
-        case 'compress': {
-          if (args && args[0]) {
-            message.dir(dir);
-            compressFile(args[0], args[1] || undefined);
-          } else {
-            message.invalid('no file name was provided');
-          }
-          break;
-        }
-        case 'decompress': {
-          if (args && args[0]) {
-            message.dir(dir);
-            decompressFile(args[0], args[1] || undefined);
-          } else {
-            message.invalid('no file name was provided');
-          }
-          break;
-        }
-        default: {
-          message.invalid(`unknown command ${operation}`);
-        }
-      }
-    })
-    .on('error', err => message.error(err.message));
-
-  process.on('SIGINT', terminate);
+  perform();
 }
 
 app();

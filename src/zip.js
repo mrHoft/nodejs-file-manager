@@ -10,7 +10,7 @@ export const compressFile = async (sourcePath, destFolder) => {
   const destPath = join(destFolder ?? dirname(sourcePath), `${sourceName}.gz`);
 
   if (
-    !(await access(destFolder, constants.F_OK)
+    !(await access(destFolder ?? dirname(sourcePath), constants.F_OK)
       .then(() => true)
       .catch(() => false))
   ) {
