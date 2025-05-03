@@ -7,10 +7,11 @@ import { cat } from './src/cat.js';
 import { createFile } from './src/create.js';
 import { createFolder } from './src/mkdir.js';
 import { renameFile } from './src/rename.js';
-import { copyFile } from './src/copy.js';
-import { moveFile } from './src/move.js';
+import { copyFile, moveFile } from './src/copy.js';
 import { deleteFile } from './src/delete.js';
 import { systemInfo } from './src/os.js';
+import { calculateHash } from './src/hash.js';
+import { compressFile, decompressFile } from './src/zip.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -50,6 +51,10 @@ function app() {
       const dir = process.cwd();
       switch (operation) {
         case '.exit': {
+          terminate();
+          break;
+        }
+        case 'exit': {
           terminate();
           break;
         }
@@ -118,7 +123,11 @@ function app() {
             message.dir(dir);
             copyFile(join(dir, args[0]), join(dir, args[1]));
           } else {
-            message.invalid('no file name was provided');
+            if (!args || !args[0]) {
+              message.invalid('no file name was provided');
+            } else {
+              message.invalid('no directory name was provided');
+            }
           }
           break;
         }
@@ -127,7 +136,11 @@ function app() {
             message.dir(dir);
             moveFile(join(dir, args[0]), join(dir, args[1]));
           } else {
-            message.invalid('no file name was provided');
+            if (!args || !args[0]) {
+              message.invalid('no file name was provided');
+            } else {
+              message.invalid('no directory name was provided');
+            }
           }
           break;
         }
@@ -149,14 +162,39 @@ function app() {
           }
           break;
         }
+        case 'hash': {
+          if (args) {
+            message.dir(dir);
+            calculateHash(join(dir, args[0])).catch(err => message.error(err.message));
+          } else {
+            message.invalid('no file name was provided');
+          }
+          break;
+        }
+        case 'compress': {
+          if (args && args[0]) {
+            message.dir(dir);
+            compressFile(join(dir, args[0]), args[1] ? join(dir, args[1]) : undefined);
+          } else {
+            message.invalid('no file name was provided');
+          }
+          break;
+        }
+        case 'decompress': {
+          if (args && args[0]) {
+            message.dir(dir);
+            decompressFile(join(dir, args[0]), args[1] ? join(dir, args[1]) : undefined);
+          } else {
+            message.invalid('no file name was provided');
+          }
+          break;
+        }
         default: {
           message.invalid(`unknown command ${operation}`);
         }
       }
     })
-    .on('error', err => {
-      message.error(err.message);
-    });
+    .on('error', err => message.error(err.message));
 
   process.on('SIGINT', terminate);
 }

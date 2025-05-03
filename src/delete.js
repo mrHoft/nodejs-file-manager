@@ -1,12 +1,14 @@
-import { unlink } from 'node:fs';
+import { unlink } from 'node:fs/promises';
 import { message } from './message.js';
 
 export const deleteFile = async filePath => {
-  unlink(filePath, err => {
-    if (err) {
-      message.error(err.message);
-    } else {
-      console.log('File moved successfully');
-    }
-  });
+  await unlink(filePath)
+    .then(() => console.log('File deleted successfully'))
+    .catch(err => {
+      if (err.code === 'ENOENT') {
+        message.error('File not found');
+      } else {
+        message.error(err.message);
+      }
+    });
 };
