@@ -1,6 +1,6 @@
 import process from 'node:process';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { parse, resolve } from 'node:path';
 import { message } from './src/message.js';
 import { ls } from './src/ls.js';
 import { cat } from './src/cat.js';
@@ -13,7 +13,7 @@ import { systemInfo } from './src/os.js';
 import { calculateHash } from './src/hash.js';
 import { compressFile, decompressFile } from './src/zip.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const root = parse(resolve('.')).root;
 
 const username = (() => {
   const args = process.argv.slice(2);
@@ -32,6 +32,12 @@ const terminate = () => {
 };
 
 function app() {
+  try {
+    process.chdir(homedir());
+  } catch (err) {
+    message.error(err.message);
+  }
+
   message.welcome(username);
   message.help();
   message.stdin();
@@ -59,8 +65,8 @@ function app() {
           break;
         }
         case 'up': {
-          if (dir === __dirname) {
-            message.invalid('can not change directory upper than current');
+          if (dir === root) {
+            message.invalid('can not change directory upper than root');
           } else {
             process.chdir(resolve('..'));
             message.dir(process.cwd());
@@ -69,13 +75,21 @@ function app() {
         }
         case 'ls': {
           message.dir(dir);
-          ls(join(dir, args ? args[0] : ''));
+          ls(args ? args[0] : '.');
           break;
         }
         case 'cd': {
           if (args) {
-            process.chdir(args[0]);
-            message.dir(process.cwd());
+            try {
+              process.chdir(args[0]);
+              message.dir(process.cwd());
+            } catch (err) {
+              if (err.code === 'ENOENT') {
+                message.error('No such directory');
+              } else {
+                message.error(err.message);
+              }
+            }
           } else {
             message.invalid('no directory name was provided');
           }
@@ -84,7 +98,7 @@ function app() {
         case 'cat': {
           if (args) {
             message.dir(dir);
-            cat(join(dir, args[0]));
+            cat(args[0]);
           } else {
             message.invalid('no file name was provided');
           }
@@ -93,7 +107,7 @@ function app() {
         case 'add': {
           if (args) {
             message.dir(dir);
-            createFile(join(dir, args[0]));
+            createFile(args[0]);
           } else {
             message.invalid('no file name was provided');
           }
@@ -111,7 +125,7 @@ function app() {
         case 'rn': {
           if (args && args[0] && args[1]) {
             message.dir(dir);
-            renameFile(join(dir, args[0]), join(dir, args[1]));
+            renameFile(args[0], args[1]);
           } else {
             console.log(args);
             message.invalid('no file name was provided');
@@ -121,7 +135,7 @@ function app() {
         case 'cp': {
           if (args && args[0] && args[1]) {
             message.dir(dir);
-            copyFile(join(dir, args[0]), join(dir, args[1]));
+            copyFile(args[0], args[1]);
           } else {
             if (!args || !args[0]) {
               message.invalid('no file name was provided');
@@ -134,7 +148,7 @@ function app() {
         case 'mv': {
           if (args && args[0] && args[1]) {
             message.dir(dir);
-            moveFile(join(dir, args[0]), join(dir, args[1]));
+            moveFile(args[0], args[1]);
           } else {
             if (!args || !args[0]) {
               message.invalid('no file name was provided');
@@ -147,7 +161,7 @@ function app() {
         case 'rm': {
           if (args) {
             message.dir(dir);
-            deleteFile(join(dir, args[0]));
+            deleteFile(args[0]);
           } else {
             message.invalid('no file name was provided');
           }
@@ -165,7 +179,7 @@ function app() {
         case 'hash': {
           if (args) {
             message.dir(dir);
-            calculateHash(join(dir, args[0])).catch(err => message.error(err.message));
+            calculateHash(args[0]).catch(err => message.error(err.message));
           } else {
             message.invalid('no file name was provided');
           }
@@ -174,7 +188,7 @@ function app() {
         case 'compress': {
           if (args && args[0]) {
             message.dir(dir);
-            compressFile(join(dir, args[0]), args[1] ? join(dir, args[1]) : undefined);
+            compressFile(args[0], args[1] || undefined);
           } else {
             message.invalid('no file name was provided');
           }
@@ -183,7 +197,7 @@ function app() {
         case 'decompress': {
           if (args && args[0]) {
             message.dir(dir);
-            decompressFile(join(dir, args[0]), args[1] ? join(dir, args[1]) : undefined);
+            decompressFile(args[0], args[1] || undefined);
           } else {
             message.invalid('no file name was provided');
           }

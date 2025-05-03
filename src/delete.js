@@ -7,6 +7,8 @@ export const deleteFile = async filePath => {
     .catch(err => {
       if (err.code === 'ENOENT') {
         message.error('File not found');
+      } else if (err.code === 'EISDIR') {
+        message.error('Can not delete directory');
       } else {
         message.error(err.message);
       }

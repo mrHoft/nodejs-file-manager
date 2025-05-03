@@ -9,13 +9,23 @@ export const compressFile = async (sourcePath, destFolder) => {
   const sourceName = basename(sourcePath);
   const destPath = join(destFolder ?? dirname(sourcePath), `${sourceName}.gz`);
 
-  const destExist = await access(destPath, constants.F_OK)
-    .then(() => {
-      message.error('Destination file already exist');
-      return true;
-    })
-    .catch(() => false);
-  if (destExist) return;
+  if (
+    !(await access(destFolder, constants.F_OK)
+      .then(() => true)
+      .catch(() => false))
+  ) {
+    message.error('Destination directory not found');
+    return;
+  }
+
+  if (
+    await access(destPath, constants.F_OK)
+      .then(() => true)
+      .catch(() => false)
+  ) {
+    message.error('Destination file already exist');
+    return;
+  }
 
   const readStream = createReadStream(sourcePath);
   const writeStream = createWriteStream(destPath);
